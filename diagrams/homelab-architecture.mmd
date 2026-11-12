@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph Targets["Monitored targets"]
+        SV[11 services<br/>Plex, Immich, Grafana,<br/>Firefly, BookStack, ...]
+        HO[2 hosts<br/>NixOS + Proxmox]
+    end
+
+    subgraph L1["Layer 1 - Service availability"]
+        UK[Uptime Kuma :3002<br/>HTTP + TCP checks<br/>60s interval, alert after 3 fails]
+    end
+
+    subgraph L2["Layer 2 - Host and systemd health"]
+        PR[Prometheus :9090<br/>+ node_exporter<br/>+ pve_exporter]
+        GR[Grafana Alerting :3000<br/>10 rules]
+    end
+
+    subgraph L3["Layer 3 - Watchdog"]
+        PC[Proxmox cron<br/>cross-device ping]
+        UR[UptimeRobot<br/>external HTTP]
+    end
+
+    subgraph Bridge["SMS bridge"]
+        TB[grafana-twilio-bridge.js :9001<br/>systemd + sops-nix creds]
+    end
+
+    TW[Twilio API<br/>SMS to on-call phone]
+    EM[Email - UptimeRobot only]
+
+    SV --> UK
+    HO --> PR
+    PR --> GR
+    HO --> PC
+    SV --> UR
+
+    UK -->|native integration| TW
+    GR -->|webhook JSON| TB
+    TB -->|REST| TW
+    PC -->|curl Twilio API| TW
+    UR --> EM
+
+    classDef targets fill:#e3f2fd,stroke:#1976d2
+    classDef layer fill:#fff3e0,stroke:#f57c00
+    classDef bridge fill:#f3e5f5,stroke:#7b1fa2
+    classDef output fill:#e8f5e9,stroke:#388e3c
+
+    class SV,HO targets
+    class UK,PR,GR,PC,UR layer
+    class TB bridge
+    class TW,EM output

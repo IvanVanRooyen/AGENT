@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant Svc as Monitored service<br/>(e.g. Immich :2283)
+    participant UK as Uptime Kuma
+    participant Br as Twilio bridge
+    participant TW as Twilio API
+    participant Ph as On-call phone
+
+    Note over Svc,UK: Normal operation — green status
+
+    Svc--xUK: Health check fails (T+0s)
+    Svc--xUK: Fails again (T+60s)
+    Svc--xUK: Fails again (T+120s)
+    UK->>UK: 3 consecutive failures → fire alert
+    UK->>+TW: POST /Messages (native integration)
+    TW->>+Ph: SMS: "Immich DOWN since 14:32"
+    Note over Ph: Received ≈ T+3 min from first failure
+
+    Note over Svc,UK: Service recovers
+    Svc->>UK: Health check OK
+    UK->>+TW: POST /Messages (recovery)
+    TW->>+Ph: SMS: "Immich UP at 14:41"
+
+    Note over UK,Br: Grafana-alerting path (host metrics)
+    Note right of Br: Grafana fires webhook →<br/>bridge → Twilio<br/>(separate path, same destination)

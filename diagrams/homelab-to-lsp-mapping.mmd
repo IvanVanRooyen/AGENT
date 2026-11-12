@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph Home["Homelab today"]
+        H1[Uptime Kuma :3002<br/>11 services]
+        H2[Grafana Alerting<br/>10 rules, 2 hosts]
+        H3[Twilio SMS bridge<br/>Node.js + systemd]
+        H4[sops-nix secrets<br/>Twilio creds encrypted]
+    end
+
+    subgraph LSP["LSP v1"]
+        L1[Uptime Kuma<br/>per-site endpoints:<br/>WiFi, LSPcare, bed terminals]
+        L2[Deferred to v2<br/>post-incident investigation]
+        L3[Same bridge<br/>Twilio and Zoho Desk]
+        L4[sops-nix or vault equiv<br/>Twilio + Zoho tokens]
+    end
+
+    H1 ==>|repoint at site endpoints| L1
+    H2 -.->|demoted| L2
+    H3 ==>|add Zoho downstream| L3
+    H4 ==>|same pattern| L4
+
+    classDef home fill:#e3f2fd,stroke:#1976d2
+    classDef lsp fill:#fff3e0,stroke:#f57c00
+    classDef deferred fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#666
+
+    class H1,H2,H3,H4 home
+    class L1,L3,L4 lsp
+    class L2 deferred

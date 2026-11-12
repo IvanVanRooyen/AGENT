@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph Sites["LSP sites (10-20 in v1)"]
+        S1[Hotel A<br/>WiFi, LSPstay]
+        S2[Hotel B<br/>WiFi, LSPstay]
+        S3[Hospital A<br/>LSPcare, bed terminals]
+        S4[...]
+    end
+
+    subgraph Central["Central cloud VPS"]
+        UK[Uptime Kuma<br/>synthetic probes]
+        SB[Status board<br/>what is broken now]
+        AH[Alert hub<br/>pluggable routing]
+    end
+
+    subgraph Outputs["Outputs"]
+        TW[Twilio SMS<br/>on-call support]
+        ZD[Zoho Desk<br/>auto-ticket + context]
+    end
+
+    V2[v2 tier - deferred<br/>Prometheus + Grafana<br/>post-incident investigation]:::deferred
+
+    Sites -->|HTTP / TCP / ping<br/>over VPN or Tailscale| UK
+    UK --> SB
+    UK --> AH
+    AH --> TW
+    AH --> ZD
+    Sites -.->|v2 only| V2
+
+    classDef deferred fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#666
+    classDef site fill:#e3f2fd,stroke:#1976d2
+    classDef central fill:#fff3e0,stroke:#f57c00
+    classDef output fill:#e8f5e9,stroke:#388e3c
+
+    class S1,S2,S3,S4 site
+    class UK,SB,AH central
+    class TW,ZD output

@@ -86,9 +86,11 @@ Skip this step if you're running short on time or if the first two tabs have lan
 
 \newpage
 
-# Part 2 — Printed backup pack (leave-behind, 4 pages)
+# Part 2 — Printed backup pack (leave-behind)
 
 Print double-sided on good paper, staple top-left, hand to the CEO at the end of the meeting. He keeps this.
+
+> **Note before printing:** Pages marked *EVIDENCE* need real screenshots dropped in from Ivan's server before printing. Shopping list is at the end of this part. Until those are in, print without them and the pack is still cogent — but the evidence pages are what convert "nice design" into "this person has shipped this."
 
 ## Page 1 — Homelab architecture today
 
@@ -106,7 +108,23 @@ Print double-sided on good paper, staple top-left, hand to the CEO at the end of
 
 \newpage
 
-## Page 3 — Alert inventory
+## Page 3 — EVIDENCE: live status board
+
+![Uptime Kuma dashboard — all monitors](evidence/uptime-kuma-dashboard.png){ width=100% }
+
+**Caption:** *The current homelab status board. Eleven monitors, uptime percentages, response-time graphs. For LSP v1 each row becomes an endpoint we care about at a site — a WiFi gateway, an LSPcare login page, a bed terminal.*
+
+\newpage
+
+## Page 4 — EVIDENCE: a real alert in the wild
+
+![Real SMS alert received from the homelab stack](evidence/real-sms-alert.jpg){ width=55% }
+
+**Caption:** *An actual SMS the homelab sent when a service went down. Received on-call within 3 minutes of first failure. This is the exact pattern LSP v1 uses — one message per incident, with site, service, and timestamp context built in.*
+
+\newpage
+
+## Page 5 — Alert inventory
 
 The 14 alert rules running today.
 
@@ -155,7 +173,7 @@ The 14 alert rules running today.
 
 \newpage
 
-## Page 4 — Mapping homelab to LSP v1
+## Page 6 — Mapping homelab to LSP v1
 
 ![Homelab components mapped to their LSP v1 equivalents](diagrams/homelab-to-lsp-mapping.png)
 
@@ -171,6 +189,28 @@ The 14 alert rules running today.
 | One home, one Proxmox host | 10–20 sites in pilot, extending toward 60+ in v2 and beyond |
 
 **Bottom line:** everything in LSP v1 is this stack, repointed and re-wrapped. The novel engineering is the Zoho Desk integration layer and the per-site onboarding flow — not the monitoring core.
+
+---
+
+\newpage
+
+## Evidence shopping list (do this at the server before printing)
+
+Drop these files into `evidence/` in the AGENT repo. The two **must-have** items are referenced by the printed pack; the rest are optional extras you can offer if the CEO drills in.
+
+**Must-have — needed to fill pages 3 and 4:**
+
+- [ ] `evidence/uptime-kuma-dashboard.png` — full-screen screenshot of Uptime Kuma at `:3002` showing all 11 monitors green with the uptime % column visible. Browser zoom around 90% so everything fits. PNG, landscape orientation.
+- [ ] `evidence/real-sms-alert.jpg` — photo of your phone showing a real Twilio SMS from the homelab. Pick one with recognisable context (service name + time). Portrait phone screenshot is fine. Crop to just the message thread.
+
+**Optional — have on laptop in case the CEO asks:**
+
+- [ ] `evidence/twilio-message-log.png` — Twilio console message log showing a week's worth of real alerts. Proves the volume is real and manageable.
+- [ ] `evidence/grafana-alert-rule.png` — Grafana alert rule page for one rule (e.g. NAS Mount Gone) showing the query, sustained condition, and the "Twilio SMS" contact point.
+- [ ] `evidence/bridge-service-status.png` — `systemctl status grafana-twilio-bridge.service` output showing it's active, running, and loaded credentials via sops-nix.
+- [ ] `evidence/incident-timeline.png` — if you have a historical incident with both the SMS timestamp and the Uptime Kuma failure record, screenshot both side-by-side. Proves end-to-end timing in the wild. Nice-to-have, not critical.
+
+**Pre-print check:** no personal phone numbers, no Twilio auth tokens, no API keys visible in any screenshot. Redact with a black box if needed.
 
 ---
 

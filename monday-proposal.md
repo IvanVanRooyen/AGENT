@@ -26,16 +26,20 @@ Everything downstream of that framing gets simpler: lead with synthetic probes, 
 
 Four components, deliverable as a single pilot slice. Target: 3 sites inside 6 weeks of start, expanding to 10–20 by month 6.
 
-1. **Per-site endpoint probes.** Uptime Kuma (or equivalent) running on the central VPS, synthetic checks against each site's endpoints — HTTP health for LSPcare / LSPstay, TCP reachability for the WiFi gateway, ping for bed terminals. Checks run over existing VPN / Tailscale. Priority list of signals comes from you.
-2. **Status board.** A single dashboard answering "what's broken right now, which customer is affected, since when, who owns it." Operational, not analytical.
-3. **SMS alerting.** Twilio-backed, routed to on-call support staff via a tiny webhook bridge — the same pattern I already run in production at home (see POC pack). Dedupe, grouping and business-hours routing configurable.
-4. **Zoho Desk auto-ticketing** via a pluggable integration layer. When an incident fires, a ticket is created with context (site, service, signal, timestamps). If LSP ever changes ticketing systems, the integration is reconfigured — not rebuilt.
+1. **Per-site health checks.** A central server that pings each site's critical endpoints — the LSPcare and LSPstay web applications, the site's WiFi gateway, bed terminals — every 60 seconds. If three in a row fail, we flag an incident.
+2. **Live status board.** A single webpage the support team keeps open, answering *"what's broken right now, which customer is affected, since when, who owns it."* Not analytical charts — just the current state of every site.
+3. **SMS alerting.** Twilio-backed. On-call support staff get a text within ~3 minutes of an incident firing. Dedupe (no SMS floods), grouping (one message per site, not one per probe), and business-hours routing are all configurable. Same pattern I already run in production at home.
+4. **Zoho Desk auto-ticketing.** When an incident fires, a Zoho ticket is created automatically with context: site, service, what signal failed, when. Built against a thin interchangeable layer — if LSP ever changes ticketing systems, we reconfigure the integration rather than rebuild it.
+
+### Zoho Desk — pre-checked for feasibility
+
+I've confirmed Zoho Desk's public API supports everything we need: create ticket, search/list tickets, look up agents and users, plus webhook events on ticket create/update/close. Authentication is OAuth2. No surprises; nothing blocks us from building this.
 
 ## v2 — after v1 proves value
 
-- **Stale-ticket escalator.** Polls Zoho Desk, SMSes the responsible support staff when a ticket passes its SLA window without activity. Thresholds configurable per severity.
-- **Infrastructure metrics layer.** Prometheus + VictoriaMetrics + Grafana as a *second* tier for post-incident investigation — CPU, memory, disk, SNMP on site hardware. This is Saran's original design, preserved and demoted. Useful once v1 is detecting incidents, not required to detect them.
-- **Multi-tenant / per-customer views.** Scoped per the original SDD's DNS-swap pattern if the business needs it.
+- **Stale-ticket escalator.** Watches Zoho Desk for tickets that have sat too long without activity, texts the responsible support staff. Thresholds configurable per severity ("critical" might be 2 hours, "low" might be 48).
+- **Infrastructure metrics layer.** The deeper monitoring stack Saran originally designed — CPU, memory, disk, network, SNMP on site hardware. Not needed to *detect* incidents (v1 handles that) but extremely useful to *investigate* them once we've been alerted.
+- **Per-customer views.** If the business wants customers to see the live status of their own site, we add a per-customer scoped version of the status board.
 
 ## Capacity and timeline
 
@@ -68,27 +72,27 @@ The target state for v1 at the first pilot site, then at every site:
 
 ## Component breakdown
 
-| Component | Purpose | Candidate tech |
+| Component | What it does | Candidate tools |
 |---|---|---|
-| Synthetic probes | HTTP / TCP / ping checks from central VPS to each site | Uptime Kuma, Gatus, Blackbox Exporter |
-| Status board | "What's broken right now" view for support + management | Uptime Kuma status page, custom Next.js board |
-| Alert hub | Deduplicates and routes incidents to Twilio and Zoho Desk | Alertmanager-style router, or a thin custom service |
-| SMS output | Operator notification | Twilio SMS API via bridge service |
-| Ticket output | Persistent incident record | Zoho Desk REST API behind pluggable interface |
-| v2 metrics tier | Post-incident investigation only | Prometheus + VictoriaMetrics + Grafana |
+| Health checks | Pings each site's critical endpoints every 60 seconds | Uptime Kuma, Gatus |
+| Status board | Live "what's broken right now" page for support and management | Built into Uptime Kuma, or a thin custom webpage |
+| Alert router | Decides who gets notified about what, suppresses noise | Lightweight purpose-built service |
+| SMS output | Texts on-call support when an incident fires | Twilio API, called via a small bridge service |
+| Ticket output | Creates a Zoho Desk ticket with full context | Zoho Desk REST API behind a thin interchangeable layer |
+| v2 investigation stack | Deeper metrics (CPU, memory, disk, network) for incidents already detected | Prometheus + Grafana — industry-standard stack |
 
-## Design properties carried over from Saran's original design
+## What carries over from Saran's design
 
-- **Modular client-server split** — per-site probers (where needed) update independently of the central stack.
-- **Resilience** — local buffering if a site goes offline; alerts fire on reconnection with correct timestamps.
-- **Multi-tenant ready** — v1 is single-tenant; v2 adds per-customer DNS-swap isolation if the business needs it.
+- **Central-server / per-site split** — the system is built so sites and the central server can be updated independently of each other.
+- **Resilience** — if a site goes offline, nothing is lost. When the site comes back, alerts fire with the correct original timestamps.
+- **Multi-tenant ready** — the architecture supports per-customer isolation when we need it in v2 or later.
 
-## What changes from Saran's design
+## What's different from Saran's design
 
-- **METPA custom Go agent and Kafka deferred.** Prometheus Agent mode with ~7-day WAL retention gives the same local-buffer story at a fraction of the complexity.
-- **Lead with endpoint probes, not Prometheus exporters.** CEO's vision is user-experience signals first, infra metrics second.
-- **Grafana demoted to post-incident investigation.** Not removed — just not the primary UI.
-- **Zoho Desk is a first-class output,** not a downstream afterthought.
+- **The custom data-collection agent and message queue Saran designed are deferred.** A standard tool (Prometheus in "agent mode") gives us the same local-buffering capability with far less code to write and maintain.
+- **Lead with customer-experience signals, not server metrics.** CEO's vision is "did the customer's thing work," not "what's the CPU at." Server metrics stay — they just move to v2.
+- **Deeper monitoring stack moves to v2.** Not dropped, just sequenced after v1 proves value.
+- **Ticketing is a first-class output,** not a downstream afterthought.
 
 ## Risks and how I'd mitigate them
 

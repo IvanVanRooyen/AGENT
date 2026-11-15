@@ -8,11 +8,14 @@ The complete pack, in order of what to use when:
 
 | File | Purpose |
 |---|---|
-| [`pdf/monday-proposal.pdf`](pdf/monday-proposal.pdf) | **Leave-behind.** One-page proposal + architecture appendix. Hand to CEO at end of meeting. |
-| [`pdf/monday-poc-kit.pdf`](pdf/monday-poc-kit.pdf) | **Working document.** Demo script, printed backup pack (pages 1-4 of Part 2), likely CEO questions with pre-prepared answers, post-meeting follow-up email template. |
-| [`monday-proposal.md`](monday-proposal.md) | Source markdown for the proposal. |
+| [`pdf/ceo-handover.pdf`](pdf/ceo-handover.pdf) | **The single leave-behind for the CEO.** Standalone — makes sense without Ivan in the room. Blends the proposal substance with the proof (diagrams + evidence screenshots). This is the one to hand over at the end of the meeting. |
+| [`pdf/monday-proposal.pdf`](pdf/monday-proposal.pdf) | Longer-form proposal with architecture appendix. Kept as reference; the CEO handover supersedes it for the actual meeting. |
+| [`pdf/monday-poc-kit.pdf`](pdf/monday-poc-kit.pdf) | **Ivan's working document.** Demo script, printed backup pack, likely CEO questions with pre-prepared answers, post-meeting follow-up email template. Not for the CEO. |
+| [`ceo-handover.md`](ceo-handover.md) | Source markdown for the CEO handover. |
+| [`monday-proposal.md`](monday-proposal.md) | Source markdown for the longer proposal. |
 | [`monday-poc-kit.md`](monday-poc-kit.md) | Source markdown for the POC kit. |
 | [`diagrams/`](diagrams/) | Mermaid source + rendered PNGs for all four architecture diagrams. |
+| [`evidence/`](evidence/) | Screenshot evidence from the live homelab stack. Placeholders until Ivan captures the real ones at the server. |
 
 ## Diagrams
 
@@ -44,6 +47,7 @@ nix shell nixpkgs#mermaid-cli --command bash -c '
 # Render markdowns to PDF
 cd ..
 nix shell nixpkgs#pandoc nixpkgs#typst --command bash -c '
+  pandoc ceo-handover.md    --pdf-engine=typst -o pdf/ceo-handover.pdf
   pandoc monday-proposal.md --pdf-engine=typst -o pdf/monday-proposal.pdf
   pandoc monday-poc-kit.md  --pdf-engine=typst -o pdf/monday-poc-kit.pdf
 '

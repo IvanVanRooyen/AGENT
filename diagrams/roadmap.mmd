@@ -1,0 +1,16 @@
+gantt
+    dateFormat YYYY-MM
+    axisFormat %b %Y
+    title LSP Telemetry — phased delivery
+
+    section v1 — detection
+    Setup central server + first pilot site :v1a, 2027-01, 2M
+    Scale to 3-5 sites                      :v1b, after v1a, 2M
+    Scale to 10-20 sites                    :v1c, after v1b, 3M
+
+    section v2 — investigation
+    Stale-ticket escalator                  :v2a, after v1c, 2M
+    Deeper monitoring stack (Saran's design) :v2b, after v1c, 3M
+
+    section v3 — scale
+    60+ sites, per-customer views           :v3, after v2b, 6M

@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph Without["Without LSP Telemetry — today"]
+        direction LR
+        A1["<b>02:00 AM</b><br/>LSPcare instance<br/>stops responding<br/><br/><i>no one at LSP knows</i>"]
+        A2["<b>08:00 AM</b><br/>customer phones support<br/><br/><i>'nothing is working'</i>"]
+        A3["<b>08:30 AM</b><br/>support investigates<br/>from scratch<br/><br/><i>no context, no history</i>"]
+        A4["<b>10:00 AM</b><br/>Zoho ticket opened<br/>escalated to<br/>engineering"]
+        A5["<b>12:00 PM</b><br/>fix deployed<br/><br/><b>10 hours of impact<br/>customer frustrated</b>"]
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+
+    subgraph With["With LSP Telemetry v1"]
+        direction LR
+        B1["<b>02:00 AM</b><br/>LSPcare instance<br/>stops responding"]
+        B2["<b>02:03 AM</b><br/>SMS fires to on-call<br/>Zoho ticket<br/>auto-created<br/>with context"]
+        B3["<b>07:00 AM</b><br/>on-call reviews ticket<br/><br/><i>already knows what,<br/>where, when</i>"]
+        B4["<b>07:30 AM</b><br/>fix deployed<br/><br/><b>customer never noticed</b>"]
+        B1 --> B2 --> B3 --> B4
+    end
+
+    Without ~~~ With
+
+    classDef bad fill:#ffebee,stroke:#c62828,color:#000
+    classDef good fill:#e8f5e9,stroke:#2e7d32,color:#000
+    classDef neutral fill:#f5f5f5,stroke:#616161,color:#000
+
+    class A1,A2,A3 bad
+    class A4 neutral
+    class A5 bad
+    class B1 neutral
+    class B2,B3,B4 good

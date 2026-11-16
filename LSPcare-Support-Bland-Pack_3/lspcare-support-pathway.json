@@ -1,0 +1,1014 @@
+{
+  "name": "LSPcare Support",
+  "description": "AI support receptionist for LSPcare bedside screens: buying packages, payments, pay-later with SMS link, faults and callbacks.",
+  "nodes": [
+    {
+      "id": "1",
+      "type": "Default",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "name": "Greeting",
+        "isStart": true,
+        "prompt": "Greet the caller: 'Thanks for calling LSPcare Support. This call is recorded. Which hospital are you calling from?' Wait for the hospital name.",
+        "extractVars": [
+          [
+            "hospital",
+            "string",
+            "Name of the hospital the caller is calling from"
+          ]
+        ],
+        "condition": "You must know which hospital the caller is calling from before moving on."
+      }
+    },
+    {
+      "id": "2",
+      "type": "Default",
+      "position": {
+        "x": 0,
+        "y": 200
+      },
+      "data": {
+        "name": "Identify bed or device",
+        "prompt": "Ask for the bed or room shown at the top centre of the home screen, for example 6CW101. If they're on a payment screen, the Device ID is shown at the bottom-left. Also ask whether they are the patient or calling for someone else.",
+        "extractVars": [
+          [
+            "device_id",
+            "string",
+            "Device ID shown at the bottom-left of the How to Pay and payment screens, e.g. 86e7e12"
+          ],
+          [
+            "bed_id",
+            "string",
+            "Bed or room code shown at the top centre of the home screen, e.g. 6CW101"
+          ],
+          [
+            "caller_role",
+            "string",
+            "patient, family or staff"
+          ]
+        ],
+        "condition": "You must have either the Device ID or the bed/room before moving on."
+      }
+    },
+    {
+      "id": "3",
+      "type": "Webhook",
+      "position": {
+        "x": 0,
+        "y": 400
+      },
+      "data": {
+        "name": "Find device",
+        "text": "One moment while I find your screen.",
+        "url": "https://REPLACE-WITH-LSP-API-BASE/hospitals/{{hospital}}/devices/lookup",
+        "method": "POST",
+        "body": "{\"hospital\": \"{{hospital}}\", \"device_id\": \"{{device_id}}\", \"bed_id\": \"{{bed_id}}\", \"call_id\": \"{{call_id}}\"}",
+        "responseData": [
+          {
+            "data": "$.device_found",
+            "name": "device_found",
+            "context": "true if the device was found at that hospital"
+          },
+          {
+            "data": "$.device_id",
+            "name": "device_id",
+            "context": "Confirmed Device ID"
+          },
+          {
+            "data": "$.package_active",
+            "name": "package_active",
+            "context": "true if a package is active now"
+          },
+          {
+            "data": "$.ends_at",
+            "name": "ends_at",
+            "context": "When the current package ends, e.g. 'Fri 30 Oct, 9:52 AM'"
+          },
+          {
+            "data": "$.payment_pending_minutes",
+            "name": "payment_pending_minutes",
+            "context": "Minutes since a payment started loading, or null"
+          },
+          {
+            "data": "$.advance_used",
+            "name": "advance_used",
+            "context": "true if pay-later was already used this stay"
+          },
+          {
+            "data": "$.balance_owing",
+            "name": "balance_owing",
+            "context": "true if an earlier pay-later amount on this device is unpaid"
+          },
+          {
+            "data": "$.helpdesk_open",
+            "name": "helpdesk_open",
+            "context": "true if it is Monday to Friday, 8:30 am to 5:00 pm Brisbane time"
+          }
+        ],
+        "responsePathways": [
+          [
+            "Default/Webhook Completion",
+            "",
+            "",
+            {
+              "id": "3b",
+              "name": "Device not found"
+            }
+          ],
+          [
+            "device_found",
+            "==",
+            "true",
+            {
+              "id": "4",
+              "name": "What do you need"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": "3b",
+      "type": "Default",
+      "position": {
+        "x": 400,
+        "y": 400
+      },
+      "data": {
+        "name": "Device not found - is the screen on?",
+        "prompt": "Say you couldn't find that screen yet. Ask: 'Is there anything showing on the screen at the moment?' If yes, ask what it says or looks like. If it's dark or black, note that.",
+        "extractVars": [
+          [
+            "screen_state",
+            "string",
+            "on (something is showing), black (nothing showing), or error (an error message is showing)"
+          ],
+          [
+            "screen_description",
+            "string",
+            "What the caller says is on the screen, in their words"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "type": "Default",
+      "position": {
+        "x": 0,
+        "y": 600
+      },
+      "data": {
+        "name": "What do you need",
+        "prompt": "Ask: 'How can I help today?' If {{package_active}} is true you may mention it is active until {{ends_at}}. Listen for: how to buy or prices; paid but not working; no card with them; screen or TV fault; wants the payment link; wants a copy of an invoice.",
+        "extractVars": [
+          [
+            "intent",
+            "string",
+            "buy_info, paid_not_working, no_card, fault, wants_link, invoice, other"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "type": "Knowledge Base",
+      "position": {
+        "x": -600,
+        "y": 800
+      },
+      "data": {
+        "name": "How to buy and prices",
+        "prompt": "Answer the caller's question about buying a package, payment options or prices using the knowledge base. Keep it short. Offer to text them the payment link.",
+        "kb": "LSPCARE SUPPORT - KNOWLEDGE BASE\n\nABOUT\nLSPcare is the bedside screen in your hospital room. TV, radio, relaxation and streaming are available by buying a package.\n\nHOW TO BUY\n1. On the home screen, tap Click to Pay.\n2. Choose how to pay: Card Payment, QR Pay or Use Voucher.\n3. Choose your package and tap Order.\nIf you already have an active package, you'll see the Your Entertainment screen first. Tap Buy a Package, then carry on from step 2.\n\nPAYMENT OPTIONS\n- Card Payment: follow the instructions on screen to pay by card.\n- QR Pay: scan the QR code on the screen with your phone camera and pay on your own phone.\n- Use Voucher: enter the code printed on your voucher.\n- Online: family and friends can pay from anywhere at tv.lsp.io.\n\nPRICES - PUBLIC PATIENTS\n1 Day (24 hours) $10.00 | 2 Days $19.00 | 3 Days $27.50 | 4 Days $36.00 | 5 Days $43.00 | 1 Week $54.00\n\nPRICES - CONCESSION HOLDERS\n1 Day (24 hours) $9.00 | 2 Days $17.00 | 3 Days $24.00 | 4 Days $30.00 | 5 Days $36.00 | 1 Week $47.00\n\nTIME LEFT\nThe home screen shows when your package ends and how much time is left. When time is running low, a red reminder appears. Tap Click to Pay to buy more time. New time is added to your current package.\n\nAFTER PAYING\nThe screen shows \"Payment Loading...\" while your package is set up. This can take up to 5 minutes. Do not pay again. If it still hasn't updated after 5 minutes, LSPcare Support will help.\n\nFINDING YOUR DETAILS\n- Device ID: bottom-left of the screen (for example 86e7e12).\n- Bed or room: top of the home screen (for example 6CW101).\n\nBASIC SCREEN TROUBLESHOOTING\n1. Check the screen is switched on and the power light is on.\n2. Press the Home button on the remote or tap the screen.\n3. If the picture is missing, check the input or source is set to LSPcare.\n4. If the screen is frozen, switch it off at the screen, wait 30 seconds, and switch it on again.\nIf it still doesn't work, LSPcare Support will log a fault.\n\nLANGUAGES\nTap Languages on the home screen to change the language.\n\nHOSPITALS USING LSPCARE\n[REPLACE WITH LSP'S HOSPITAL LIST, including common short names callers use]\n"
+      }
+    },
+    {
+      "id": "6",
+      "type": "Default",
+      "position": {
+        "x": -200,
+        "y": 800
+      },
+      "data": {
+        "name": "Paid but not working",
+        "prompt": "Ask how they paid and roughly how long ago. If {{payment_pending_minutes}} or their answer is under 5 minutes: explain the screen shows 'Payment Loading...' while the package is set up, this can take up to 5 minutes, and they should not pay again. If it has been more than 5 minutes: apologise and say you'll pass it to the team straight away.",
+        "extractVars": [
+          [
+            "payment_method",
+            "string",
+            "card, qr, voucher or online"
+          ],
+          [
+            "paid_minutes_ago",
+            "integer",
+            "Roughly how many minutes ago they paid"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "7",
+      "type": "Default",
+      "position": {
+        "x": 200,
+        "y": 800
+      },
+      "data": {
+        "name": "Pay later - collect details",
+        "prompt": "The caller (the patient or a family member) doesn't have a card on them right now. Say you may be able to switch on a 1 Day package now and text a payment link. Collect: their name; a mobile number for the SMS (read it back to confirm); an email if they have one (optional); and when they will pay, which must be within 24 hours. Do not ask for card or bank details.",
+        "extractVars": [
+          [
+            "contact_name",
+            "string",
+            "Caller's full name"
+          ],
+          [
+            "mobile",
+            "string",
+            "Mobile number for the SMS, confirmed by reading it back"
+          ],
+          [
+            "email",
+            "string",
+            "Email address, optional"
+          ],
+          [
+            "pay_by",
+            "string",
+            "When they will pay, within 24 hours, e.g. 'tomorrow 10am'"
+          ]
+        ],
+        "condition": "You must have the caller's name, a confirmed mobile number and a pay-by time within 24 hours before moving on."
+      }
+    },
+    {
+      "id": "7b",
+      "type": "Webhook",
+      "position": {
+        "x": 200,
+        "y": 1000
+      },
+      "data": {
+        "name": "Pay later check",
+        "text": "Thanks, I'm just checking that now.",
+        "url": "https://REPLACE-WITH-LSP-API-BASE/devices/{{device_id}}/advance",
+        "method": "POST",
+        "body": "{\"hospital\": \"{{hospital}}\", \"device_id\": \"{{device_id}}\", \"bed_id\": \"{{bed_id}}\", \"contact_name\": \"{{contact_name}}\", \"mobile\": \"{{mobile}}\", \"email\": \"{{email}}\", \"pay_by\": \"{{pay_by}}\", \"call_id\": \"{{call_id}}\"}",
+        "responseData": [
+          {
+            "data": "$.approved",
+            "name": "advance_granted",
+            "context": "true if a 1 Day package was switched on"
+          },
+          {
+            "data": "$.reason",
+            "name": "decline_reason",
+            "context": "Reason code: unpaid_advance, advance_used, package_active, payment_loading, device_not_found. Only unpaid_advance may be explained to the caller."
+          },
+          {
+            "data": "$.ends_at",
+            "name": "ends_at",
+            "context": "When the 1 Day package ends"
+          }
+        ],
+        "responsePathways": [
+          [
+            "Default/Webhook Completion",
+            "",
+            "",
+            {
+              "id": "7d",
+              "name": "Pay later declined"
+            }
+          ],
+          [
+            "advance_granted",
+            "==",
+            "true",
+            {
+              "id": "7c",
+              "name": "Pay later approved"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": "7c",
+      "type": "Default",
+      "position": {
+        "x": 0,
+        "y": 1200
+      },
+      "data": {
+        "name": "Pay later approved",
+        "prompt": "Say: 'Thanks. I've turned on a 1 Day package so you can start watching now. I'll text you a payment link. Please pay by {{pay_by}} at tv.lsp.io, or tap Click to Pay on your screen when you have your card.'"
+      }
+    },
+    {
+      "id": "7d",
+      "type": "Default",
+      "position": {
+        "x": 400,
+        "y": 1200
+      },
+      "data": {
+        "name": "Pay later declined",
+        "prompt": "If {{decline_reason}} is 'unpaid_advance', say: 'There's an earlier amount on this screen that hasn't been paid yet. Once that's paid, you can buy more time. I'll text you a link to pay it.' Otherwise say: 'I'm not able to start a package without payment this time. I'll text you a link so you or a family member can pay online at tv.lsp.io.' Do not give any other reason. Ask if they would also like the team to call them back."
+      }
+    },
+    {
+      "id": "8a",
+      "type": "Default",
+      "position": {
+        "x": -400,
+        "y": 1400
+      },
+      "data": {
+        "name": "Confirm mobile for SMS",
+        "prompt": "If {{mobile}} is already known, read it back and confirm. Otherwise ask for a mobile number to text the payment link to and read it back.",
+        "extractVars": [
+          [
+            "mobile",
+            "string",
+            "Mobile number for the SMS, confirmed"
+          ]
+        ],
+        "condition": "You must have a confirmed mobile number."
+      }
+    },
+    {
+      "id": "8",
+      "type": "Webhook",
+      "position": {
+        "x": 0,
+        "y": 1400
+      },
+      "data": {
+        "name": "Send payment link by SMS",
+        "text": "Sending that text now.",
+        "url": "https://REPLACE-WITH-LSP-API-BASE/payment-links",
+        "method": "POST",
+        "body": "{\"mobile\": \"{{mobile}}\", \"hospital\": \"{{hospital}}\", \"device_id\": \"{{device_id}}\", \"pay_by\": \"{{pay_by}}\", \"advance_granted\": \"{{advance_granted}}\", \"call_id\": \"{{call_id}}\"}",
+        "responseData": [
+          {
+            "data": "$.sms_sent",
+            "name": "sms_sent",
+            "context": "true if the SMS was sent"
+          },
+          {
+            "data": "$.mobile_last4",
+            "name": "mobile_last4",
+            "context": "Last 4 digits of the mobile"
+          }
+        ],
+        "responsePathways": [
+          [
+            "Default/Webhook Completion",
+            "",
+            "",
+            {
+              "id": "10",
+              "name": "Hand to a person"
+            }
+          ],
+          [
+            "sms_sent",
+            "==",
+            "true",
+            {
+              "id": "8b",
+              "name": "SMS sent"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": "8b",
+      "type": "Default",
+      "position": {
+        "x": 0,
+        "y": 1600
+      },
+      "data": {
+        "name": "SMS sent",
+        "prompt": "Say: 'I've sent a payment link to the number ending in {{mobile_last4}}. You can pay at tv.lsp.io.' Ask if there's anything else."
+      }
+    },
+    {
+      "id": "9",
+      "type": "Knowledge Base",
+      "position": {
+        "x": 600,
+        "y": 800
+      },
+      "data": {
+        "name": "Screen or TV fault",
+        "prompt": "Help with basic steps from the knowledge base: check the screen is on, try the remote, check the input or source. One step at a time. If it still doesn't work, say you'll log it for the team.",
+        "kb": "LSPCARE SUPPORT - KNOWLEDGE BASE\n\nABOUT\nLSPcare is the bedside screen in your hospital room. TV, radio, relaxation and streaming are available by buying a package.\n\nHOW TO BUY\n1. On the home screen, tap Click to Pay.\n2. Choose how to pay: Card Payment, QR Pay or Use Voucher.\n3. Choose your package and tap Order.\nIf you already have an active package, you'll see the Your Entertainment screen first. Tap Buy a Package, then carry on from step 2.\n\nPAYMENT OPTIONS\n- Card Payment: follow the instructions on screen to pay by card.\n- QR Pay: scan the QR code on the screen with your phone camera and pay on your own phone.\n- Use Voucher: enter the code printed on your voucher.\n- Online: family and friends can pay from anywhere at tv.lsp.io.\n\nPRICES - PUBLIC PATIENTS\n1 Day (24 hours) $10.00 | 2 Days $19.00 | 3 Days $27.50 | 4 Days $36.00 | 5 Days $43.00 | 1 Week $54.00\n\nPRICES - CONCESSION HOLDERS\n1 Day (24 hours) $9.00 | 2 Days $17.00 | 3 Days $24.00 | 4 Days $30.00 | 5 Days $36.00 | 1 Week $47.00\n\nTIME LEFT\nThe home screen shows when your package ends and how much time is left. When time is running low, a red reminder appears. Tap Click to Pay to buy more time. New time is added to your current package.\n\nAFTER PAYING\nThe screen shows \"Payment Loading...\" while your package is set up. This can take up to 5 minutes. Do not pay again. If it still hasn't updated after 5 minutes, LSPcare Support will help.\n\nFINDING YOUR DETAILS\n- Device ID: bottom-left of the screen (for example 86e7e12).\n- Bed or room: top of the home screen (for example 6CW101).\n\nBASIC SCREEN TROUBLESHOOTING\n1. Check the screen is switched on and the power light is on.\n2. Press the Home button on the remote or tap the screen.\n3. If the picture is missing, check the input or source is set to LSPcare.\n4. If the screen is frozen, switch it off at the screen, wait 30 seconds, and switch it on again.\nIf it still doesn't work, LSPcare Support will log a fault.\n\nLANGUAGES\nTap Languages on the home screen to change the language.\n\nHOSPITALS USING LSPCARE\n[REPLACE WITH LSP'S HOSPITAL LIST, including common short names callers use]\n",
+        "extractVars": [
+          [
+            "fault_type",
+            "string",
+            "Short description of the problem"
+          ],
+          [
+            "fixed",
+            "boolean",
+            "true if the problem is fixed"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "10",
+      "type": "Default",
+      "position": {
+        "x": 400,
+        "y": 1800
+      },
+      "data": {
+        "name": "Hand to a person",
+        "prompt": "Say you'll pass this to the LSPcare Support team. Collect or confirm: name, mobile number (read it back), and a one-line reason. If {{helpdesk_open}} is true, offer to put them through to the team now. If {{helpdesk_open}} is not true, explain the team is available Monday to Friday, 8:30 am to 5:00 pm Brisbane time, ask for the best time to call back, and say the team will call them back on the next business day. If the screen is black or showing an error, say a technician will check it, and include the socket label {{port_label}} if the caller gave one.",
+        "extractVars": [
+          [
+            "contact_name",
+            "string",
+            "Caller's name"
+          ],
+          [
+            "mobile",
+            "string",
+            "Mobile number, confirmed"
+          ],
+          [
+            "callback_time",
+            "string",
+            "Best time to call back"
+          ],
+          [
+            "reason",
+            "string",
+            "One-line reason for the callback"
+          ]
+        ],
+        "condition": "You must have a name, a confirmed mobile number and either the caller's agreement to be transferred now or a callback time."
+      }
+    },
+    {
+      "id": "10b",
+      "type": "Webhook",
+      "position": {
+        "x": 400,
+        "y": 2000
+      },
+      "data": {
+        "name": "Log ticket",
+        "text": "I'm logging that for the team now.",
+        "url": "https://REPLACE-WITH-LSP-API-BASE/tickets",
+        "method": "POST",
+        "body": "{\"hospital\": \"{{hospital}}\", \"device_id\": \"{{device_id}}\", \"bed_id\": \"{{bed_id}}\", \"contact_name\": \"{{contact_name}}\", \"mobile\": \"{{mobile}}\", \"callback_time\": \"{{callback_time}}\", \"reason\": \"{{reason}}\", \"intent\": \"{{intent}}\", \"call_id\": \"{{call_id}}\", \"port_label\": \"{{port_label}}\", \"screen_state\": \"{{screen_state}}\", \"screen_description\": \"{{screen_description}}\"}",
+        "responseData": [
+          {
+            "data": "$.ticket_id",
+            "name": "ticket_id",
+            "context": "Reference number for the caller"
+          }
+        ],
+        "responsePathways": [
+          [
+            "Default/Webhook Completion",
+            "",
+            "",
+            {
+              "id": "11",
+              "name": "Close"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": "10c",
+      "type": "Transfer Call",
+      "position": {
+        "x": 800,
+        "y": 2000
+      },
+      "data": {
+        "name": "Transfer to Helpdesk",
+        "prompt": "Say: 'I'll put you through to the LSPcare Support team now.' If the transfer fails, apologise and say the team will call them back.",
+        "transferNumber": "+61000000000"
+      }
+    },
+    {
+      "id": "11",
+      "type": "End Call",
+      "position": {
+        "x": 0,
+        "y": 2200
+      },
+      "data": {
+        "name": "Close",
+        "prompt": "Briefly recap what was done. If there is a {{ticket_id}}, give it as the reference number. Thank the caller and say goodbye."
+      }
+    },
+    {
+      "id": "G1",
+      "type": "End Call",
+      "position": {
+        "x": -900,
+        "y": 0
+      },
+      "data": {
+        "name": "Clinical or emergency",
+        "isGlobal": true,
+        "globalLabel": "Caller mentions pain, a fall, needing a nurse, feeling unwell, or any medical emergency",
+        "prompt": "Say: 'Please press your nurse call button now, or speak to the ward staff. They can help you straight away.' Then end the call politely."
+      }
+    },
+    {
+      "id": "G2",
+      "type": "Default",
+      "position": {
+        "x": -900,
+        "y": 200
+      },
+      "data": {
+        "name": "Asks for a person",
+        "isGlobal": true,
+        "globalLabel": "Caller asks to speak to a person, a human or a staff member",
+        "prompt": "Say you can arrange that."
+      }
+    },
+    {
+      "id": "G3",
+      "type": "End Call",
+      "position": {
+        "x": -900,
+        "y": 400
+      },
+      "data": {
+        "name": "Abusive caller",
+        "isGlobal": true,
+        "globalLabel": "Caller is abusive or threatening after one warning",
+        "prompt": "Say: 'I'm going to end the call now. You're welcome to call LSPcare Support again.' Then end the call."
+      }
+    },
+    {
+      "id": "12",
+      "type": "Default",
+      "position": {
+        "x": 1000,
+        "y": 800
+      },
+      "data": {
+        "name": "Copy invoice - details",
+        "prompt": "The caller wants a copy of an invoice or receipt. Ask which purchase: the most recent, or roughly what date and which package. Then confirm the mobile number to text it to (read it back). Explain the invoice will be sent as a secure link by SMS.",
+        "extractVars": [
+          [
+            "invoice_period",
+            "string",
+            "Which purchase: 'most recent', or a date or date range"
+          ],
+          [
+            "invoice_package",
+            "string",
+            "Package if mentioned, e.g. 1 Day, 1 Week"
+          ],
+          [
+            "mobile",
+            "string",
+            "Mobile number for the SMS, confirmed by reading it back"
+          ]
+        ],
+        "condition": "You must know which purchase and have a confirmed mobile number."
+      }
+    },
+    {
+      "id": "12b",
+      "type": "Webhook",
+      "position": {
+        "x": 1000,
+        "y": 1000
+      },
+      "data": {
+        "name": "Send invoice by SMS",
+        "text": "One moment, I'm finding that invoice.",
+        "url": "https://REPLACE-WITH-LSP-API-BASE/invoices/send-sms",
+        "method": "POST",
+        "body": "{\"hospital\": \"{{hospital}}\", \"device_id\": \"{{device_id}}\", \"invoice_period\": \"{{invoice_period}}\", \"invoice_package\": \"{{invoice_package}}\", \"mobile\": \"{{mobile}}\", \"call_id\": \"{{call_id}}\"}",
+        "responseData": [
+          {
+            "data": "$.invoice_sent",
+            "name": "invoice_sent",
+            "context": "true if at least one invoice link was texted"
+          },
+          {
+            "data": "$.invoice_count",
+            "name": "invoice_count",
+            "context": "How many invoices were sent"
+          },
+          {
+            "data": "$.mobile_last4",
+            "name": "mobile_last4",
+            "context": "Last 4 digits of the mobile"
+          }
+        ],
+        "responsePathways": [
+          [
+            "Default/Webhook Completion",
+            "",
+            "",
+            {
+              "id": "12d",
+              "name": "Invoice not found"
+            }
+          ],
+          [
+            "invoice_sent",
+            "==",
+            "true",
+            {
+              "id": "12c",
+              "name": "Invoice sent"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": "12c",
+      "type": "Default",
+      "position": {
+        "x": 900,
+        "y": 1200
+      },
+      "data": {
+        "name": "Invoice sent",
+        "prompt": "Say: 'I've texted a link to your invoice to the number ending in {{mobile_last4}}.' If {{invoice_count}} is more than 1, say how many. Ask if there's anything else."
+      }
+    },
+    {
+      "id": "12d",
+      "type": "Default",
+      "position": {
+        "x": 1200,
+        "y": 1200
+      },
+      "data": {
+        "name": "Invoice not found",
+        "prompt": "Say you couldn't find a matching purchase on that screen. Offer to have the team look into it and call them back."
+      }
+    },
+    {
+      "id": "3c",
+      "type": "Default",
+      "position": {
+        "x": 400,
+        "y": 550
+      },
+      "data": {
+        "name": "Screen is on - confirm details",
+        "prompt": "Say: 'Thanks, that means the screen is online.' Check it looks like the home screen: a room or bed number at the top in the middle, the time at the top right, a HELP button, and a row of buttons along the bottom such as Entertainment, How to Pay, Information, Clock, Languages and Apps. Ask them to read the room or bed number at the top exactly, letter by letter, and confirm the hospital. If they can open How to Pay, the Device ID is at the bottom-left.",
+        "extractVars": [
+          [
+            "bed_id",
+            "string",
+            "Bed or room read from the top of the screen"
+          ],
+          [
+            "device_id",
+            "string",
+            "Device ID if read from a payment screen"
+          ],
+          [
+            "hospital",
+            "string",
+            "Hospital, confirmed"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "3d",
+      "type": "Default",
+      "position": {
+        "x": 800,
+        "y": 550
+      },
+      "data": {
+        "name": "Screen is black - check data cable",
+        "prompt": "Say: 'If the screen is black, it may not be connected.' Guide one step at a time: 1) Check the screen is switched on. 2) Look at the wall plate near the bed for the network sockets. One is marked with an LSP-TV sticker. Check the cable from the screen is pushed firmly into the LSP-TV socket until it clicks. 3) Wait about a minute for the screen to come back on. Also ask them to read the label above that socket (for example 9NE 092); it helps our technicians find the bed. Do not ask the caller to unplug anything else, and never the red power outlet.",
+        "extractVars": [
+          [
+            "screen_back",
+            "boolean",
+            "true if the screen came back on"
+          ],
+          [
+            "port_label",
+            "string",
+            "Label above the LSP-TV socket, e.g. 9NE 092"
+          ]
+        ]
+      }
+    },
+    {
+      "globalConfig": {
+        "globalPrompt": "You are the LSPcare Support assistant. You answer calls from hospital patients and their families in Australia about the LSPcare bedside screen: buying packages, payments, the tv.lsp.io payment link and basic screen problems, and copies of invoices sent by SMS.\n\nStyle: speak calmly, slowly and in plain words. Many callers are unwell or elderly. Keep each reply to one or two short sentences. Ask one question at a time. Use Australian English.\n\nAlways start by finding out which hospital the caller is calling from, then their bed or room (shown at the top centre of the home screen, for example 6CW101) or their Device ID (shown at the bottom-left of the How to Pay and payment screens). If the screen can't be found, check whether anything is showing on it before handing over.\n\nSafety: you never give medical advice. If the caller mentions pain, a fall, needing a nurse, feeling unwell or any emergency, tell them to press their nurse call button now or speak to ward staff, and end the support conversation.\n\nPayments: never take card numbers or bank details by voice. Never waive, discount or refund a payment. Never promise a package the system has not confirmed. Pay-later is for callers (the patient or a family member) who don't have a card on them right now. Only grant pay-later when the eligibility check returns approved, and only after collecting the caller's name, mobile number and when they will pay (within 24 hours). Always send the payment link by SMS and read the mobile number back before sending. If an earlier pay-later amount is unpaid, no new time can be bought on that device until it is paid. Invoices are only ever sent as an SMS link, never read out. All calls are recorded.\n\nAfter paying, the screen shows \"Payment Loading...\" while the package is set up. This can take up to 5 minutes. Tell callers not to pay again during that time.\n\nThe LSPcare Support team answers calls Monday to Friday, 8:30 am to 5:00 pm Brisbane time (AEST, UTC+10, no daylight saving). Outside those hours, take the caller's details and tell them the team will call back on the next business day.\n\nIf you are unsure, offer to have the LSPcare Support team call them back."
+      },
+      "position": {
+        "x": -900,
+        "y": -200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "1",
+      "target": "2",
+      "data": {
+        "label": "Caller has said which hospital they are calling from"
+      }
+    },
+    {
+      "id": "e2",
+      "source": "2",
+      "target": "3",
+      "data": {
+        "label": "Caller has given a Device ID or bed/room"
+      }
+    },
+    {
+      "id": "e5",
+      "source": "4",
+      "target": "5",
+      "data": {
+        "label": "Caller asks how to buy, about prices, payment options or what's included"
+      }
+    },
+    {
+      "id": "e6",
+      "source": "4",
+      "target": "6",
+      "data": {
+        "label": "Caller has paid but the package hasn't started"
+      }
+    },
+    {
+      "id": "e7",
+      "source": "4",
+      "target": "7",
+      "data": {
+        "label": "Caller has no card or wallet with them right now"
+      }
+    },
+    {
+      "id": "e8",
+      "source": "4",
+      "target": "8a",
+      "data": {
+        "label": "Caller just wants the payment link texted to them"
+      }
+    },
+    {
+      "id": "e9",
+      "source": "4",
+      "target": "9",
+      "data": {
+        "label": "The screen or TV isn't working"
+      }
+    },
+    {
+      "id": "e10",
+      "source": "5",
+      "target": "8a",
+      "data": {
+        "label": "Caller wants the payment link texted"
+      }
+    },
+    {
+      "id": "e11",
+      "source": "5",
+      "target": "11",
+      "data": {
+        "label": "Question answered and nothing else needed"
+      }
+    },
+    {
+      "id": "e12",
+      "source": "6",
+      "target": "11",
+      "data": {
+        "label": "Paid less than 5 minutes ago and caller is happy to wait"
+      }
+    },
+    {
+      "id": "e13",
+      "source": "6",
+      "target": "10",
+      "data": {
+        "label": "Paid more than 5 minutes ago and still not working"
+      }
+    },
+    {
+      "id": "e14",
+      "source": "7",
+      "target": "7b",
+      "data": {
+        "label": "Name, confirmed mobile and pay-by time collected"
+      }
+    },
+    {
+      "id": "e15",
+      "source": "7c",
+      "target": "8",
+      "data": {
+        "label": "Approval has been explained"
+      }
+    },
+    {
+      "id": "e16",
+      "source": "7d",
+      "target": "8",
+      "data": {
+        "label": "Decline has been explained"
+      }
+    },
+    {
+      "id": "e17",
+      "source": "8a",
+      "target": "8",
+      "data": {
+        "label": "Mobile number confirmed"
+      }
+    },
+    {
+      "id": "e18",
+      "source": "8b",
+      "target": "11",
+      "data": {
+        "label": "Nothing else needed"
+      }
+    },
+    {
+      "id": "e19",
+      "source": "8b",
+      "target": "10",
+      "data": {
+        "label": "Caller wants the team to call them back"
+      }
+    },
+    {
+      "id": "e20",
+      "source": "9",
+      "target": "11",
+      "data": {
+        "label": "Problem fixed"
+      }
+    },
+    {
+      "id": "e21",
+      "source": "9",
+      "target": "10",
+      "data": {
+        "label": "Problem not fixed"
+      }
+    },
+    {
+      "id": "e22",
+      "source": "10",
+      "target": "10b",
+      "data": {
+        "label": "Helpdesk is closed, or the caller prefers a callback; name, mobile and callback time collected"
+      }
+    },
+    {
+      "id": "e23",
+      "source": "10",
+      "target": "10c",
+      "data": {
+        "label": "helpdesk_open is true (Monday to Friday, 8:30 am to 5:00 pm Brisbane time) and the caller wants to speak to someone now"
+      }
+    },
+    {
+      "id": "e24",
+      "source": "G2",
+      "target": "10",
+      "data": {
+        "label": "Always"
+      }
+    },
+    {
+      "id": "e25",
+      "source": "4",
+      "target": "12",
+      "data": {
+        "label": "Caller wants a copy of an invoice, receipt or tax invoice"
+      }
+    },
+    {
+      "id": "e26",
+      "source": "12",
+      "target": "12b",
+      "data": {
+        "label": "Purchase identified and mobile confirmed"
+      }
+    },
+    {
+      "id": "e27",
+      "source": "12c",
+      "target": "11",
+      "data": {
+        "label": "Nothing else needed"
+      }
+    },
+    {
+      "id": "e28",
+      "source": "12c",
+      "target": "10",
+      "data": {
+        "label": "Caller wants to talk to the team"
+      }
+    },
+    {
+      "id": "e29",
+      "source": "12d",
+      "target": "10",
+      "data": {
+        "label": "Caller wants the team to look into it"
+      }
+    },
+    {
+      "id": "e30",
+      "source": "12d",
+      "target": "11",
+      "data": {
+        "label": "Caller doesn't need anything else"
+      }
+    },
+    {
+      "id": "e128",
+      "source": "3b",
+      "target": "3c",
+      "data": {
+        "label": "Something is showing on the screen"
+      }
+    },
+    {
+      "id": "e129",
+      "source": "3b",
+      "target": "3d",
+      "data": {
+        "label": "The screen is black or dark"
+      }
+    },
+    {
+      "id": "e130",
+      "source": "3b",
+      "target": "10",
+      "data": {
+        "label": "An error message is showing, or the caller can't see the screen"
+      }
+    },
+    {
+      "id": "e131",
+      "source": "3c",
+      "target": "3",
+      "data": {
+        "label": "Caller has read out the bed, room or Device ID"
+      }
+    },
+    {
+      "id": "e132",
+      "source": "3c",
+      "target": "10",
+      "data": {
+        "label": "Second failed attempt, or the caller can't read the details"
+      }
+    },
+    {
+      "id": "e133",
+      "source": "3d",
+      "target": "2",
+      "data": {
+        "label": "The screen has come back on"
+      }
+    },
+    {
+      "id": "e134",
+      "source": "3d",
+      "target": "10",
+      "data": {
+        "label": "The screen is still black after checking the cable"
+      }
+    }
+  ]
+}

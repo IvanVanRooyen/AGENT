@@ -1,0 +1,60 @@
+LSPCARE SUPPORT - KNOWLEDGE BASE
+
+ABOUT
+LSPcare is the bedside screen in your hospital room. TV, radio, relaxation and streaming are available by buying a package.
+
+HOW TO BUY
+1. On the home screen, tap Click to Pay.
+2. Choose how to pay: Card Payment, QR Pay or Use Voucher.
+3. Choose your package and tap Order.
+If you already have an active package, you'll see the Your Entertainment screen first. Tap Buy a Package, then carry on from step 2.
+
+PAYMENT OPTIONS
+- Card Payment: follow the instructions on screen to pay by card.
+- QR Pay: scan the QR code on the screen with your phone camera and pay on your own phone.
+- Use Voucher: enter the code printed on your voucher.
+- Online: family and friends can pay from anywhere at tv.lsp.io.
+
+PRICES - PUBLIC PATIENTS
+1 Day (24 hours) $10.00 | 2 Days $19.00 | 3 Days $27.50 | 4 Days $36.00 | 5 Days $43.00 | 1 Week $54.00
+
+PRICES - CONCESSION HOLDERS
+1 Day (24 hours) $9.00 | 2 Days $17.00 | 3 Days $24.00 | 4 Days $30.00 | 5 Days $36.00 | 1 Week $47.00
+
+TIME LEFT
+The home screen shows when your package ends and how much time is left. When time is running low, a red reminder appears. Tap Click to Pay to buy more time. New time is added to your current package.
+
+AFTER PAYING
+The screen shows "Payment Loading..." while your package is set up. This can take up to 5 minutes. Do not pay again. If it still hasn't updated after 5 minutes, LSPcare Support will help.
+
+FINDING YOUR DETAILS
+- Bed or room: top centre of the home screen (for example 6CW101).
+- Device ID: bottom-left of the How to Pay and payment screens (for example 86e7e12).
+
+WHAT THE HOME SCREEN LOOKS LIKE
+A room or bed number at the top in the middle, the time and date at the top right, a round HELP button, a large video panel saying Good morning or Good evening, a Click to Pay panel on the right, and buttons along the bottom: Entertainment, How to Pay, Information, Clock, Languages and Apps. If you can see this, the screen is online.
+
+SCREEN IS BLACK
+The screen may not be connected. Check it is switched on. On the wall plate near the bed, find the network socket marked with an LSP-TV sticker and make sure the cable from the screen is pushed firmly into it until it clicks. Wait about a minute. The label above that socket (for example 9NE 092) helps our technicians find your bed. If the screen stays black, LSPcare Support will send a technician.
+
+BASIC SCREEN TROUBLESHOOTING
+1. Check the screen is switched on and the power light is on.
+2. Press the Home button on the remote or tap the screen.
+3. If the picture is missing, check the input or source is set to LSPcare.
+4. If the screen is frozen, switch it off at the screen, wait 30 seconds, and switch it on again.
+If it still doesn't work, LSPcare Support will log a fault.
+
+NO CARD WITH YOU (PAY LATER)
+If you or your family member don't have a card on you right now, LSPcare Support may switch on a 1 Day package and text you a payment link. You give your name, mobile number and when you'll pay (within 24 hours). If it isn't paid, the package ends after 24 hours and no new time can be bought on that screen until the earlier amount is paid.
+
+COPY OF AN INVOICE
+LSPcare Support can text you a link to a copy of your invoice. Tell us which purchase (the most recent, or roughly the date) and the mobile number to send it to.
+
+LANGUAGES
+Tap Languages on the home screen to change the language.
+
+LSPCARE SUPPORT HOURS
+The LSPcare Support team is available Monday to Friday, 8:30 am to 5:00 pm Brisbane time. Outside these hours the assistant takes your details and the team calls you back on the next business day.
+
+HOSPITALS USING LSPCARE
+[REPLACE WITH LSP'S HOSPITAL LIST, including common short names callers use]

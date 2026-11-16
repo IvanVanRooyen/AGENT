@@ -26,6 +26,14 @@ The complete pack, in order of what to use when:
 | `alert-flow-sequence.png` | POC kit Part 2 page 2 — service down → SMS in hand round-trip |
 | `homelab-to-lsp-mapping.png` | POC kit Part 2 page 4 — side-by-side mapping of components |
 
+## LSPcare AI receptionist (Bland AI)
+
+| File / dir | Purpose |
+|---|---|
+| `LSPcare-AI-Receptionist-Workflow_3.pdf` | 11-page design doc for the Bland AI pathway |
+| `LSPcare-Support-Bland-Pack_3/` | Importable Bland pack: pathway JSON, global prompt, knowledge base, README with API contracts |
+| [`lspcare-mock/`](lspcare-mock/) | Mock LSPcare backend API + Bland setup guide. Lets the pathway run end-to-end in Voice Chat without touching the real LSPcare API. Start here: [`lspcare-mock/BLAND-SETUP.md`](lspcare-mock/BLAND-SETUP.md) |
+
 ## Reference material
 
 - `Software Design Document-NOT FINALIZED.pdf` — Saran Saravanan's January 2026 SDD for the LSP telemetry platform. Source document the Monday proposal responds to.
